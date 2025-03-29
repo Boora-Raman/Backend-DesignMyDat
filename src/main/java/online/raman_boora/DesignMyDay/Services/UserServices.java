@@ -2,6 +2,7 @@ package online.raman_boora.DesignMyDay.Services;
 
 import online.raman_boora.DesignMyDay.Models.Users;
 import online.raman_boora.DesignMyDay.Repositories.UserRepository;
+import online.raman_boora.DesignMyDay.configurations.CustomUserDetails;
 import org.apache.catalina.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;

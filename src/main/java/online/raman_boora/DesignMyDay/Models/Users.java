@@ -1,5 +1,6 @@
 package online.raman_boora.DesignMyDay.Models;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.mongodb.lang.NonNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -16,6 +17,7 @@ public class Users {
     @Id
     private String UserId;
     @NonNull
+    @JsonProperty("username")
     private String name;
     @NonNull
     private String email;
@@ -23,3 +25,7 @@ public class Users {
     private String password;
 
 }
+
+//bhairanpur godown delivery
+//manish rawat 2 packet
+//9+gst

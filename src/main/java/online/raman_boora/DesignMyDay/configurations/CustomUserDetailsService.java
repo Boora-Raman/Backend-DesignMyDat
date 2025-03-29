@@ -1,31 +1,25 @@
 package online.raman_boora.DesignMyDay.configurations;
 
-
-import online.raman_boora.DesignMyDay.Models.Users;
 import online.raman_boora.DesignMyDay.Repositories.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import online.raman_boora.DesignMyDay.configurations.CustomUserDetails;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
-import java.util.Optional;
-@Component
+@Service
 public class CustomUserDetailsService implements UserDetailsService {
 
-//    private static final Logger logger = LoggerFactory.getLogger(CustomUserDetailsService.class);
+    private final UserRepository userRepository;
 
-    @Autowired
-    UserRepository userRepository;
+    public CustomUserDetailsService(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        Optional<Users> userDetails = userRepository.findByname(username);
-        if (userDetails.isEmpty()) {
-//            logger.error("User Not Found: {}", username);
-            throw new UsernameNotFoundException("User Not Found");
-        }
-        return new CustomUserDetails(userDetails.get());
+        return userRepository.findByname(username)
+                .map(CustomUserDetails::new)
+                .orElseThrow(() -> new UsernameNotFoundException("User Not Found"));
     }
 }
-
