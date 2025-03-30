@@ -1,5 +1,7 @@
 package online.raman_boora.DesignMyDay.Controller;
 
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import online.raman_boora.DesignMyDay.Models.Users;
 import online.raman_boora.DesignMyDay.Services.UserServices;
 import org.slf4j.Logger;
@@ -8,12 +10,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
-@CrossOrigin
+
 @RestController
 public class UserController {
 
@@ -21,6 +20,9 @@ public class UserController {
 
     @Autowired
     private UserServices userServices;
+
+    @Autowired
+    private HttpServletResponse httpServletResponse;
 
     @GetMapping("/users")
     public List<Users> getUsers() {
@@ -37,11 +39,16 @@ public class UserController {
 
     @PostMapping("/login")
     public ResponseEntity<Map<String, String>> login(@RequestBody Users user) {
-        logger.info("Login request received: username={}", user.getName());
         String token = userServices.validate(user);
+
+        if (token == null) {
+            return ResponseEntity.status(401).body(Collections.singletonMap("error", "Invalid credentials"));
+        }
+
         Map<String, String> response = new HashMap<>();
         response.put("token", token);
-        logger.info("Login successful, token generated for username={}", user.getName());
+        response.put("message", "Login successful");
+
         return ResponseEntity.ok(response);
     }
 
