@@ -62,6 +62,6 @@ else
 
     public Optional<Users> getUserByname(String name) {
 
-        return UserRepository.findByname(name);
+        return UserRepository.findByName(name);
     }
 }
