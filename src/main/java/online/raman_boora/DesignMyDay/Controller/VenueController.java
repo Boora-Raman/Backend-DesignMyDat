@@ -2,12 +2,14 @@ package online.raman_boora.DesignMyDay.Controller;
 
 import jakarta.validation.Valid;
 import online.raman_boora.DesignMyDay.Models.Venue;
+import online.raman_boora.DesignMyDay.Repositories.UserRepository;
 import online.raman_boora.DesignMyDay.Services.VenueServices;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -26,6 +28,9 @@ public class VenueController {
     @Autowired
     private VenueServices venueServices;
 
+    @Autowired
+    private UserRepository userRepository; // Added to validate user existence
+
     @GetMapping
     public ResponseEntity<List<Venue>> getAllVenues() {
         logger.info("Fetching all venues");
@@ -36,9 +41,14 @@ public class VenueController {
     @PostMapping
     public ResponseEntity<String> createVenue(
             @Valid @RequestPart("venue") Venue venue,
-            @RequestPart(value = "images", required = false) List<MultipartFile> images) {
-        logger.info("Creating new venue: {}", venue.getVenueName());
-        String result = venueServices.saveVenue(venue, images);
+            @RequestPart(value = "images", required = false) List<MultipartFile> images,
+            @RequestParam String userId) {
+        logger.info("Creating new venue: {} for user name: {}", venue.getVenueName(), userId);
+        if (userRepository.findByName(userId).isEmpty()) {
+            logger.warn("User with name '{}' not found", userId);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("User not found");
+        }
+        String result = venueServices.saveVenue(venue, images, userId);
         return ResponseEntity.status(HttpStatus.CREATED).body(result);
     }
 
@@ -93,6 +103,15 @@ public class VenueController {
         if (venues.isEmpty()) {
             return ResponseEntity.noContent().build();
         }
+        return ResponseEntity.ok(venues);
+    }
+
+    @GetMapping("/user/{userId}")
+    @PreAuthorize("hasRole('USER') and #userId == authentication.principal.name") // Use name from JWT
+    public ResponseEntity<List<Venue>> getVenuesByUserId(@PathVariable String userId) {
+        logger.info("Fetching venues for user name: {}", userId);
+        List<Venue> venues = venueServices.getVenuesByUserId(userId);
+        logger.debug("Found {} venues for user name: {}", venues.size(), userId);
         return ResponseEntity.ok(venues);
     }
 }
