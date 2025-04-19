@@ -21,16 +21,13 @@ public class Venue {
     @Id
     private String venueId;
 
-    @NotBlank(message = "Venue name cannot be blank")
-    @Indexed(unique = true)
     private String venueName;
-
-    @NotBlank(message = "Venue address cannot be blank")
     private String venueAddress;
-
-    @DBRef
-    private List<Service> services = new ArrayList<>();
+    private Double venuePrice;
 
     @DBRef
     private List<Images> images = new ArrayList<>();
+
+    @DBRef
+    private List<Service> services = new ArrayList<>();
 }

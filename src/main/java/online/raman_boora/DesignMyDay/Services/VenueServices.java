@@ -1,28 +1,28 @@
 package online.raman_boora.DesignMyDay.Services;
 
 import online.raman_boora.DesignMyDay.Models.Images;
+import online.raman_boora.DesignMyDay.Models.Service;
 import online.raman_boora.DesignMyDay.Models.Users;
 import online.raman_boora.DesignMyDay.Models.Venue;
 import online.raman_boora.DesignMyDay.Repositories.ImagesRepository;
-import online.raman_boora.DesignMyDay.Repositories.ServicesRepository;
+import online.raman_boora.DesignMyDay.Repositories.ServiceRepository;
 import online.raman_boora.DesignMyDay.Repositories.UserRepository;
 import online.raman_boora.DesignMyDay.Repositories.VenueRepository;
 import online.raman_boora.DesignMyDay.configurations.FileStorageConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
-@Service
+@org.springframework.stereotype.Service
 public class VenueServices {
 
     private static final Logger logger = LoggerFactory.getLogger(VenueServices.class);
@@ -37,7 +37,7 @@ public class VenueServices {
     private ImagesRepository imagesRepository;
 
     @Autowired
-    private ServicesRepository servicesRepository;
+    private ServiceRepository serviceRepository;
 
     @Autowired
     private UserRepository userRepository;
@@ -60,6 +60,10 @@ public class VenueServices {
                 logger.warn("Venue with name '{}' already exists", venue.getVenueName());
                 throw new IllegalArgumentException("A venue with this name already exists");
             }
+            if (venue.getVenuePrice() == null || venue.getVenuePrice() < 0) {
+                logger.error("Invalid venue price: {}", venue.getVenuePrice());
+                throw new IllegalArgumentException("Venue price must be non-negative");
+            }
 
             if (images != null && !images.isEmpty()) {
                 logger.info("Processing {} images for venue: {}", images.size(), venue.getVenueName());
@@ -74,7 +78,7 @@ public class VenueServices {
             }
 
             venueRepository.save(venue);
-            Optional<Users> user = userRepository.findByName(userId); // Use name instead of _id
+            Optional<Users> user = userRepository.findByName(userId);
             if (user.isPresent()) {
                 Users u = user.get();
                 if (u.getVenues() == null) {
@@ -140,6 +144,13 @@ public class VenueServices {
         if (updatedVenue.getVenueAddress() != null && !updatedVenue.getVenueAddress().isBlank()) {
             venue.setVenueAddress(updatedVenue.getVenueAddress());
         }
+        if (updatedVenue.getVenuePrice() != null) {
+            if (updatedVenue.getVenuePrice() < 0) {
+                logger.error("Invalid venue price: {}", updatedVenue.getVenuePrice());
+                throw new IllegalArgumentException("Venue price must be non-negative");
+            }
+            venue.setVenuePrice(updatedVenue.getVenuePrice());
+        }
         if (updatedVenue.getServices() != null) {
             venue.setServices(updatedVenue.getServices());
         }
@@ -181,9 +192,8 @@ public class VenueServices {
         try {
             Venue v = venue.get();
             if (v.getServices() != null) {
-                for (online.raman_boora.DesignMyDay.Models.Service service : v.getServices()) {
-                    servicesRepository.deleteById(service.getServiceId());
-                }
+                v.getServices().clear();
+                venueRepository.save(v);
             }
             if (v.getImages() != null) {
                 for (Images image : v.getImages()) {
@@ -214,7 +224,7 @@ public class VenueServices {
 
     public List<Venue> getVenuesByUserId(String userId) {
         logger.info("Retrieving venues for user name: {}", userId);
-        Optional<Users> user = userRepository.findByName(userId); // Use name instead of _id
+        Optional<Users> user = userRepository.findByName(userId);
         if (user.isEmpty()) {
             logger.warn("User with name '{}' not found", userId);
             return new ArrayList<>();
@@ -229,5 +239,55 @@ public class VenueServices {
 
         logger.debug("Found {} venues for user name: {}", venues.size(), userId);
         return new ArrayList<>(venues);
+    }
+
+    @Transactional
+    public void addServicesToVenue(String venueId, List<String> serviceIds) {
+        logger.info("Adding {} services to venue ID: {}", serviceIds.size(), venueId);
+        Optional<Venue> venueOpt = venueRepository.findById(venueId);
+        if (venueOpt.isEmpty()) {
+            logger.warn("Venue with ID '{}' not found", venueId);
+            throw new IllegalArgumentException("Venue not found");
+        }
+
+        Venue venue = venueOpt.get();
+        if (venue.getServices() == null) {
+            venue.setServices(new ArrayList<>());
+        }
+
+        for (String serviceId : serviceIds) {
+            Optional<Service> serviceOpt = serviceRepository.findById(serviceId);
+            if (serviceOpt.isPresent()) {
+                Service service = serviceOpt.get();
+                if (!venue.getServices().stream().anyMatch(s -> s.getServiceId().equals(serviceId))) {
+                    venue.getServices().add(service);
+                    logger.debug("Added service '{}' to venue '{}'", service.getServiceName(), venue.getVenueName());
+                }
+            } else {
+                logger.warn("Service with ID '{}' not found", serviceId);
+            }
+        }
+
+        venueRepository.save(venue);
+        logger.info("Services added to venue ID: {}", venueId);
+    }
+
+    @Transactional
+    public void removeServiceFromVenue(String venueId, String serviceId) {
+        logger.info("Removing service ID: {} from venue ID: {}", serviceId, venueId);
+        Optional<Venue> venueOpt = venueRepository.findById(venueId);
+        if (venueOpt.isEmpty()) {
+            logger.warn("Venue with ID '{}' not found", venueId);
+            throw new IllegalArgumentException("Venue not found");
+        }
+
+        Venue venue = venueOpt.get();
+        if (venue.getServices() != null) {
+            venue.getServices().removeIf(service -> service.getServiceId().equals(serviceId));
+            venueRepository.save(venue);
+            logger.info("Service ID: {} removed from venue ID: {}", serviceId, venueId);
+        } else {
+            logger.warn("No services found for venue ID: {}", venueId);
+        }
     }
 }
