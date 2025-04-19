@@ -1,14 +1,23 @@
 package online.raman_boora.DesignMyDay.Services;
 
+import online.raman_boora.DesignMyDay.Models.Images;
 import online.raman_boora.DesignMyDay.Models.Venue;
+import online.raman_boora.DesignMyDay.Repositories.ImagesRepository;
+import online.raman_boora.DesignMyDay.Repositories.ServicesRepository;
 import online.raman_boora.DesignMyDay.Repositories.VenueRepository;
+import online.raman_boora.DesignMyDay.configurations.FileStorageConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Optional;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 @Service
 public class VenueServices {
@@ -18,7 +27,18 @@ public class VenueServices {
     @Autowired
     private VenueRepository venueRepository;
 
-    // Get all venues
+    @Autowired
+    private ImageService imageService;
+
+    @Autowired
+    private ImagesRepository imagesRepository;
+
+    @Autowired
+    private ServicesRepository servicesRepository;
+
+    @Autowired
+    private FileStorageConfig fileStorageConfig;
+
     public List<Venue> getAllVenues() {
         logger.info("Retrieving all venues from the database");
         List<Venue> venues = venueRepository.findAll();
@@ -26,25 +46,37 @@ public class VenueServices {
         return venues;
     }
 
-    // Save a new venue
-    public String saveVenue(Venue venue) {
+    @Transactional
+    public String saveVenue(Venue venue, List<MultipartFile> images) {
         logger.info("Saving new venue: {}", venue.getVenueName());
         try {
-            // Check if a venue with the same name already exists (since venueName is unique)
             if (venueRepository.findByVenueName(venue.getVenueName()).isPresent()) {
                 logger.warn("Venue with name '{}' already exists", venue.getVenueName());
                 throw new IllegalArgumentException("A venue with this name already exists");
             }
+
+            if (images != null && !images.isEmpty()) {
+                logger.info("Processing {} images for venue: {}", images.size(), venue.getVenueName());
+                List<Images> savedImages = imageService.saveVenueImages(images);
+                // Explicitly save each Images entity to MongoDB
+                for (Images image : savedImages) {
+                    imagesRepository.save(image);
+                    logger.debug("Saved image: {} with ID: {}", image.getImgName(), image.getImgid());
+                }
+                venue.setImages(savedImages);
+            } else {
+                logger.info("No images provided for venue: {}", venue.getVenueName());
+            }
+
             venueRepository.save(venue);
-            logger.info("Venue '{}' saved successfully", venue.getVenueName());
+            logger.info("Venue '{}' saved successfully with ID: {}", venue.getVenueName(), venue.getVenueId());
             return "Venue created successfully with ID: " + venue.getVenueId();
         } catch (Exception e) {
-            logger.error("Error saving venue: {}", e.getMessage());
+            logger.error("Error saving venue: {}", e.getMessage(), e);
             throw new RuntimeException("Failed to create venue: " + e.getMessage());
         }
     }
 
-    // Get venue by ID
     public Optional<Venue> getVenueById(String venueId) {
         logger.info("Fetching venue with ID: {}", venueId);
         Optional<Venue> venue = venueRepository.findById(venueId);
@@ -56,20 +88,19 @@ public class VenueServices {
         return venue;
     }
 
-    // Get venues by name
-//    public List<Venue> getVenuesByName(String venueName) {
-//        logger.info("Fetching venues with name: {}", venueName);
-//        Optional<Venue> venues = venueRepository.findByVenueName(venueName);
-//        if (venues.isEmpty()) {
-//            logger.warn("No venues found with name: {}", venueName);
-//        } else {
-//            logger.debug("Found {} venues with name '{}'", venues.si, venueName);
-//        }
-//        return venues;
-//    }
+    public Optional<Venue> getVenuesByName(String venueName) {
+        logger.info("Fetching venues with name: {}", venueName);
+        Optional<Venue> venue = venueRepository.findByVenueName(venueName);
+        if (venue.isEmpty()) {
+            logger.warn("No venues found with name: {}", venueName);
+        } else {
+            logger.debug("Found venue with name '{}'", venueName);
+        }
+        return venue;
+    }
 
-    // Update an existing venue
-    public Optional<Venue> updateVenue(String venueId, Venue updatedVenue) {
+    @Transactional
+    public Optional<Venue> updateVenue(String venueId, Venue updatedVenue, List<MultipartFile> images) {
         logger.info("Updating venue with ID: {}", venueId);
         Optional<Venue> existingVenue = venueRepository.findById(venueId);
 
@@ -79,9 +110,8 @@ public class VenueServices {
         }
 
         Venue venue = existingVenue.get();
-        // Update fields only if they are provided in the request
+
         if (updatedVenue.getVenueName() != null && !updatedVenue.getVenueName().isBlank()) {
-            // Check if the new name is already taken by another venue
             Optional<Venue> venueWithSameName = venueRepository.findByVenueName(updatedVenue.getVenueName());
             if (venueWithSameName.isPresent() && !venueWithSameName.get().getVenueId().equals(venueId)) {
                 logger.warn("Another venue already exists with name: {}", updatedVenue.getVenueName());
@@ -96,6 +126,21 @@ public class VenueServices {
             venue.setServices(updatedVenue.getServices());
         }
 
+        if (images != null && !images.isEmpty()) {
+            try {
+                logger.info("Processing {} images for venue update: {}", images.size(), venue.getVenueName());
+                List<Images> savedImages = imageService.saveVenueImages(images);
+                for (Images image : savedImages) {
+                    imagesRepository.save(image);
+                    logger.debug("Saved image: {} with ID: {}", image.getImgName(), image.getImgid());
+                }
+                venue.getImages().addAll(savedImages);
+            } catch (Exception e) {
+                logger.error("Error saving images for venue ID '{}': {}", venueId, e.getMessage());
+                throw new RuntimeException("Failed to save images: " + e.getMessage());
+            }
+        }
+
         try {
             venueRepository.save(venue);
             logger.info("Venue with ID '{}' updated successfully", venueId);
@@ -106,7 +151,7 @@ public class VenueServices {
         }
     }
 
-    // Delete a venue
+    @Transactional
     public boolean deleteVenue(String venueId) {
         logger.info("Deleting venue with ID: {}", venueId);
         Optional<Venue> venue = venueRepository.findById(venueId);
@@ -116,6 +161,19 @@ public class VenueServices {
         }
 
         try {
+            Venue v = venue.get();
+            if (v.getServices() != null) {
+                for (online.raman_boora.DesignMyDay.Models.Service service : v.getServices()) {
+                    servicesRepository.deleteById(service.getServiceId());
+                }
+            }
+            if (v.getImages() != null) {
+                for (Images image : v.getImages()) {
+                    imagesRepository.deleteById(image.getImgid());
+                    Path filePath = Paths.get(fileStorageConfig.getVenueUploadDir(), image.getImgName());
+                    Files.deleteIfExists(filePath);
+                }
+            }
             venueRepository.deleteById(venueId);
             logger.info("Venue with ID '{}' deleted successfully", venueId);
             return true;
@@ -125,7 +183,6 @@ public class VenueServices {
         }
     }
 
-    // Search venues by address (partial match)
     public List<Venue> searchVenuesByAddress(String address) {
         logger.info("Searching venues with address containing: {}", address);
         List<Venue> venues = venueRepository.findByVenueAddressContainingIgnoreCase(address);
@@ -135,9 +192,5 @@ public class VenueServices {
             logger.debug("Found {} venues with address containing '{}'", venues.size(), address);
         }
         return venues;
-    }
-
-    public Optional<Venue> getVenuesByName(String venueName) {
-    return venueRepository.findByVenueName(venueName);
     }
 }

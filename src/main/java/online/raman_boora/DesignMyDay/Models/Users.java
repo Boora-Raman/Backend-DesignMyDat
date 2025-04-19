@@ -27,15 +27,15 @@ public class Users {
 
     @NotBlank(message = "Email cannot be blank")
     @Email(message = "Email should be valid")
-    @Indexed(unique = true) // Ensures email uniqueness in MongoDB
+    @Indexed(unique = true)
     private String email;
 
     @NotBlank(message = "Password cannot be blank")
-    private String password; // Consider encrypting this in production
+    private String password;
 
     @DBRef
-    private List<Booking> bookings = new ArrayList<>(); // All bookings made by the user
+    Images images;
 
     @DBRef
-    private List<Venue> savedVenues = new ArrayList<>(); // User can save customized or preferred venues
+    private List<Venue> venues = new ArrayList<>();
 }

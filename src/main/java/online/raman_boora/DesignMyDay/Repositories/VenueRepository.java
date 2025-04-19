@@ -10,4 +10,7 @@ public interface VenueRepository extends MongoRepository<Venue, String> {
     Optional<Venue> findByVenueName(String venueName); // Find venue by exact name
     List<Venue> findByVenueNameContainingIgnoreCase(String venueName); // Find venues by partial name match
     List<Venue> findByVenueAddressContainingIgnoreCase(String address); // Find venues by partial address match
+
+//    Optional<Venue> findByVenueName(String venueName);
+//    List<Venue> findByVenueAddressContainingIgnoreCase(String address);
 }

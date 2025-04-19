@@ -22,12 +22,15 @@ public class Venue {
     private String venueId;
 
     @NotBlank(message = "Venue name cannot be blank")
-    @Indexed(unique = true) // Ensures venue name uniqueness
+    @Indexed(unique = true)
     private String venueName;
 
     @NotBlank(message = "Venue address cannot be blank")
     private String venueAddress;
 
     @DBRef
-    private List<Service> services = new ArrayList<>(); // List of available services at this venue
+    private List<Service> services = new ArrayList<>();
+
+    @DBRef
+    private List<Images> images = new ArrayList<>();
 }
