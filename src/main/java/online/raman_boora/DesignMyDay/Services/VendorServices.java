@@ -37,7 +37,7 @@ public class VendorServices {
 
     @Transactional
     public Vendor addVendor(Vendor vendor, List<MultipartFile> images) throws IOException {
-        logger.info("Adding new vendor: {}", vendor.getName());
+        logger.info("Adding new vendor: {}", vendor.getVendorName()); // Updated to vendorName
         List<Images> savedImages = new ArrayList<>();
         if (images != null && !images.isEmpty()) {
             for (MultipartFile image : images) {
@@ -50,7 +50,7 @@ public class VendorServices {
                     img.setImgid(UUID.randomUUID().toString());
                     img.setImgName(fileName);
                     savedImages.add(imageRepository.save(img));
-                    logger.debug("Saved image: {} for vendor: {}", fileName, vendor.getName());
+                    logger.debug("Saved image: {} for vendor: {}", fileName, vendor.getVendorName());
                 }
             }
         }
@@ -58,7 +58,7 @@ public class VendorServices {
         vendor.setImages(savedImages);
         Vendor savedVendor = vendorRepository.save(vendor);
 
-        logger.info("Vendor '{}' added successfully with ID: {}", vendor.getName(), savedVendor.getId());
+        logger.info("Vendor '{}' added successfully with ID: {}", vendor.getVendorName(), savedVendor.getVendorId());
         return savedVendor;
     }
 

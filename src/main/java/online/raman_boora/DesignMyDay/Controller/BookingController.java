@@ -7,8 +7,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -23,31 +23,41 @@ public class BookingController {
     @Autowired
     private BookingServices bookingServices;
 
+    @PostMapping
+    public ResponseEntity<?> createBooking(@RequestBody Map<String, Object> requestBody) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication != null ? authentication.getName() : null;
+        if (username == null) {
+            logger.warn("No authenticated user found for booking creation");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not authenticated");
+        }
+
+        try {
+            String venueId = (String) requestBody.get("venueId");
+            String bookingDate = (String) requestBody.get("bookingDate");
+            List<String> vendorIds = (List<String>) requestBody.get("vendorIds");
+            List<String> carterIds = (List<String>) requestBody.get("carterIds");
+
+            logger.info("Creating booking for user: {}", username);
+            Booking booking = bookingServices.createBooking(
+                    username,
+                    venueId,
+                    bookingDate,
+                    vendorIds,
+                    carterIds
+            );
+            return ResponseEntity.status(HttpStatus.CREATED).body(booking);
+        } catch (Exception e) {
+            logger.error("Error creating booking: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Failed to create booking: " + e.getMessage());
+        }
+    }
+
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<Booking>> getBookingsByUserId(@PathVariable String userId) {
         logger.info("Fetching bookings for user ID: {}", userId);
         List<Booking> bookings = bookingServices.getBookingsByUserId(userId);
         return ResponseEntity.ok(bookings);
-    }
-
-    @PostMapping
-    public ResponseEntity<Booking> createBooking(
-            @RequestBody Map<String, Object> bookingData,
-            @AuthenticationPrincipal UserDetails userDetails) {
-        logger.info("Creating booking for user: {}", userDetails.getUsername());
-        try {
-            String email = userDetails.getUsername();  // ✅ Corrected
-            String venueId = (String) bookingData.get("venueId");
-            String bookingDate = (String) bookingData.get("bookingDate");
-            List<String> vendorIds = (List<String>) bookingData.get("vendorIds");
-            List<String> carterIds = (List<String>) bookingData.get("carterIds");
-
-            Booking savedBooking = bookingServices.createBooking(email, venueId, bookingDate, vendorIds, carterIds);
-            return ResponseEntity.status(HttpStatus.CREATED).body(savedBooking);
-        } catch (Exception e) {
-            logger.error("Error creating booking: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
-        }
     }
 
     @GetMapping("/venue/{venueId}")
@@ -57,15 +67,14 @@ public class BookingController {
         return ResponseEntity.ok(bookings);
     }
 
-    @PutMapping("/{bookingId}/cancel")
+    @PutMapping("/cancel/{bookingId}")
     public ResponseEntity<?> cancelBooking(@PathVariable String bookingId) {
         logger.info("Cancelling booking with ID: {}", bookingId);
         boolean cancelled = bookingServices.cancelBooking(bookingId);
         if (cancelled) {
-            return ResponseEntity.ok().build();
+            return ResponseEntity.ok("Booking cancelled successfully");
         }
-        logger.warn("Booking with ID '{}' not found", bookingId);
-        return ResponseEntity.notFound().build();
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Booking not found");
     }
 
     @GetMapping

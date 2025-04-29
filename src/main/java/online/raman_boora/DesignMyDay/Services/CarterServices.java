@@ -37,7 +37,7 @@ public class CarterServices {
 
     @Transactional
     public Carter addCarter(Carter carter, List<MultipartFile> images) throws IOException {
-        logger.info("Adding new carter: {}", carter.getName());
+        logger.info("Adding new carter: {}", carter.getCarterName()); // Updated to carterName
         List<Images> savedImages = new ArrayList<>();
         if (images != null && !images.isEmpty()) {
             for (MultipartFile image : images) {
@@ -50,7 +50,7 @@ public class CarterServices {
                     img.setImgid(UUID.randomUUID().toString());
                     img.setImgName(fileName);
                     savedImages.add(imageRepository.save(img));
-                    logger.debug("Saved image: {} for carter: {}", fileName, carter.getName());
+                    logger.debug("Saved image: {} for carter: {}", fileName, carter.getCarterName());
                 }
             }
         }
@@ -58,7 +58,7 @@ public class CarterServices {
         carter.setImages(savedImages);
         Carter savedCarter = carterRepository.save(carter);
 
-        logger.info("Carter '{}' added successfully with ID: {}", carter.getName(), savedCarter.getId());
+        logger.info("Carter '{}' added successfully with ID: {}", carter.getCarterName(), savedCarter.getCarterId());
         return savedCarter;
     }
 

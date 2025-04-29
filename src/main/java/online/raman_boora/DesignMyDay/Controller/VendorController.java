@@ -27,16 +27,16 @@ public class VendorController {
     public ResponseEntity<?> addVendor(
             @RequestPart("vendor") Vendor vendor,
             @RequestPart(value = "images", required = false) List<MultipartFile> images) {
-        logger.info("Adding vendor: {}", vendor.getName());
+        logger.info("Adding vendor: {}", vendor.getVendorName()); // Updated to vendorName
         try {
             Vendor savedVendor = vendorServices.addVendor(vendor, images);
             return ResponseEntity.status(HttpStatus.CREATED).body(savedVendor);
         } catch (IOException e) {
-            logger.error("Error adding vendor '{}': {}", vendor.getName(), e.getMessage());
+            logger.error("Error adding vendor '{}': {}", vendor.getVendorName(), e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Failed to save images: " + e.getMessage());
         } catch (Exception e) {
-            logger.error("Error adding vendor '{}': {}", vendor.getName(), e.getMessage());
+            logger.error("Error adding vendor '{}': {}", vendor.getVendorName(), e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body("Invalid request: " + e.getMessage());
         }

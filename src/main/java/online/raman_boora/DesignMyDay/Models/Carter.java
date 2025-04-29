@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,18 +19,21 @@ import java.util.List;
 @Document(collection = "carters")
 public class Carter {
     @Id
-    private String id;
+    private String carterId; // Changed from id to carterId
 
     @NotBlank
-    private String name;
+    private String carterName; // Changed from name to carterName
 
     @NotEmpty
-    private List<String> specialties = new ArrayList<>();
+    private List<String> carterSpecialties = new ArrayList<>(); // Changed from specialties to carterSpecialties
 
     private String description;
 
     @NotNull
     private Double price;
+
+    @NotBlank
+    private String carterContact; // Added carterContact field
 
     @DBRef
     private List<Images> images = new ArrayList<>();

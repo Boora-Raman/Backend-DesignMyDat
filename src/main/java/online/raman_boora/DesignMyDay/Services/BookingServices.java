@@ -47,12 +47,28 @@ public class BookingServices {
     public Booking createBooking(String name, String venueId, String bookingDate, List<String> vendorIds, List<String> carterIds) {
         logger.info("Creating booking for user name: {} and venue ID: {}", name, venueId);
         try {
+            // Validate inputs
+            if (name == null || name.trim().isEmpty()) {
+                logger.warn("User name is null or empty");
+                throw new IllegalArgumentException("User name is required");
+            }
+            if (venueId == null || venueId.trim().isEmpty()) {
+                logger.warn("Venue ID is null or empty");
+                throw new IllegalArgumentException("Venue ID is required");
+            }
+            if (bookingDate == null || bookingDate.trim().isEmpty()) {
+                logger.warn("Booking date is null or empty");
+                throw new IllegalArgumentException("Booking date is required");
+            }
+
+            // Fetch user
             Optional<Users> userOpt = userRepository.findByName(name);
             if (userOpt.isEmpty()) {
                 logger.warn("User with name '{}' not found", name);
                 throw new IllegalArgumentException("User not found");
             }
 
+            // Fetch venue
             Optional<Venue> venueOpt = venueRepository.findById(venueId);
             if (venueOpt.isEmpty()) {
                 logger.warn("Venue with ID '{}' not found", venueId);
@@ -62,10 +78,15 @@ public class BookingServices {
             Users user = userOpt.get();
             Venue venue = venueOpt.get();
 
+            // Fetch vendors
             List<Vendor> vendors = new ArrayList<>();
-            double totalPrice = venue.getVenuePrice() != 0? venue.getVenuePrice() : 0.0;
+            double totalPrice = venue.getVenuePrice() != 0 ? venue.getVenuePrice() : 0.0;
             if (vendorIds != null && !vendorIds.isEmpty()) {
                 for (String vendorId : vendorIds) {
+                    if (vendorId == null || vendorId.trim().isEmpty()) {
+                        logger.warn("Skipping null or empty vendor ID");
+                        continue;
+                    }
                     Optional<Vendor> vendorOpt = vendorRepository.findById(vendorId);
                     if (vendorOpt.isPresent()) {
                         Vendor vendor = vendorOpt.get();
@@ -77,9 +98,14 @@ public class BookingServices {
                 }
             }
 
+            // Fetch carters
             List<Carter> carters = new ArrayList<>();
             if (carterIds != null && !carterIds.isEmpty()) {
                 for (String carterId : carterIds) {
+                    if (carterId == null || carterId.trim().isEmpty()) {
+                        logger.warn("Skipping null or empty carter ID");
+                        continue;
+                    }
                     Optional<Carter> carterOpt = carterRepository.findById(carterId);
                     if (carterOpt.isPresent()) {
                         Carter carter = carterOpt.get();
@@ -91,6 +117,7 @@ public class BookingServices {
                 }
             }
 
+            // Create booking
             Booking booking = new Booking();
             booking.setBookingId(UUID.randomUUID().toString());
             booking.setVenue(venue);
@@ -100,8 +127,10 @@ public class BookingServices {
             booking.setStatus("Pending");
             booking.setTotalPrice(totalPrice);
 
+            // Save booking
             Booking savedBooking = bookingRepository.save(booking);
 
+            // Update user's bookings
             user.getBookings().add(savedBooking);
             userRepository.save(user);
 

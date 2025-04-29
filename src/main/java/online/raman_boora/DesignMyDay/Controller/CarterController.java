@@ -27,16 +27,16 @@ public class CarterController {
     public ResponseEntity<?> addCarter(
             @RequestPart("carter") Carter carter,
             @RequestPart(value = "images", required = false) List<MultipartFile> images) {
-        logger.info("Adding carter: {}", carter.getName());
+        logger.info("Adding carter: {}", carter.getCarterName()); // Updated to carterName
         try {
             Carter savedCarter = carterServices.addCarter(carter, images);
             return ResponseEntity.status(HttpStatus.CREATED).body(savedCarter);
         } catch (IOException e) {
-            logger.error("Error adding carter '{}': {}", carter.getName(), e.getMessage());
+            logger.error("Error adding carter '{}': {}", carter.getCarterName(), e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Failed to save images: " + e.getMessage());
         } catch (Exception e) {
-            logger.error("Error adding carter '{}': {}", carter.getName(), e.getMessage());
+            logger.error("Error adding carter '{}': {}", carter.getCarterName(), e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body("Invalid request: " + e.getMessage());
         }

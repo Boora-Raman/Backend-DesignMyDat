@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,22 +19,24 @@ import java.util.List;
 @Document(collection = "vendors")
 public class Vendor {
     @Id
-    private String id;
+    private String vendorId; // Changed to vendorId for consistency with frontend
 
     @NotBlank
-    private String name;
+    private String vendorName; // Changed to vendorName to match frontend
 
     @NotEmpty
-    private List<String> specialties = new ArrayList<>();
+    private List<String> vendorSpecialties = new ArrayList<>(); // Changed to vendorSpecialties
 
     private String description;
 
     @NotNull
     private Double price;
 
+    @NotBlank
+    private String vendorContact; // Added vendorContact field
+
     @DBRef
     private List<Images> images = new ArrayList<>();
-
 
     public List<Images> getImages() {
         return images != null ? images : new ArrayList<>();
@@ -42,7 +45,4 @@ public class Vendor {
     public void setImages(List<Images> images) {
         this.images = images != null ? images : new ArrayList<>();
     }
-
-
-
 }

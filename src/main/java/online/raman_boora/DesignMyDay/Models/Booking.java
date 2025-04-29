@@ -1,5 +1,6 @@
 package online.raman_boora.DesignMyDay.Models;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -20,6 +21,7 @@ public class Booking {
     private String bookingId;
 
     @DBRef
+    @NotNull
     private Venue venue;
 
     @DBRef
@@ -28,6 +30,7 @@ public class Booking {
     @DBRef
     private List<Carter> carters = new ArrayList<>();
 
+    @NotNull
     private Date bookingDate;
 
     private String status;
