@@ -124,7 +124,7 @@ public class BookingServices {
             booking.setVendors(vendors);
             booking.setCarters(carters);
             booking.setBookingDate(new SimpleDateFormat("yyyy-MM-dd").parse(bookingDate));
-            booking.setStatus("Pending");
+            booking.setStatus("Booked");
             booking.setTotalPrice(totalPrice);
 
             // Save booking
