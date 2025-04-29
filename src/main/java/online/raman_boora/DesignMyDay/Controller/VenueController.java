@@ -1,8 +1,6 @@
 package online.raman_boora.DesignMyDay.Controller;
 
-import jakarta.validation.Valid;
 import online.raman_boora.DesignMyDay.Models.Venue;
-import online.raman_boora.DesignMyDay.Repositories.UserRepository;
 import online.raman_boora.DesignMyDay.Services.VenueServices;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,10 +11,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.Collections;
-import java.util.HashMap;
+import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -28,8 +24,19 @@ public class VenueController {
     @Autowired
     private VenueServices venueServices;
 
-    @Autowired
-    private UserRepository userRepository; // Added to validate user existence
+    @PostMapping
+    public ResponseEntity<Venue> addVenue(
+            @RequestPart("venue") Venue venue,
+            @RequestPart(value = "images", required = false) List<MultipartFile> images) {
+        logger.info("Adding venue: {}", venue.getVenueName());
+        try {
+            Venue savedVenue = venueServices.addVenue(venue, images);
+            return ResponseEntity.status(HttpStatus.CREATED).body(savedVenue);
+        } catch (IOException e) {
+            logger.error("Error adding venue '{}': {}", venue.getVenueName(), e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
 
     @GetMapping
     public ResponseEntity<List<Venue>> getAllVenues() {
@@ -38,80 +45,40 @@ public class VenueController {
         return ResponseEntity.ok(venues);
     }
 
-    @PostMapping
-    public ResponseEntity<String> createVenue(
-            @Valid @RequestPart("venue") Venue venue,
-            @RequestPart(value = "images", required = false) List<MultipartFile> images,
-            @RequestParam String userId) {
-        logger.info("Creating new venue: {} for user name: {}", venue.getVenueName(), userId);
-        if (userRepository.findByName(userId).isEmpty()) {
-            logger.warn("User with name '{}' not found", userId);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("User not found");
-        }
-        String result = venueServices.saveVenue(venue, images, userId);
-        return ResponseEntity.status(HttpStatus.CREATED).body(result);
-    }
-
     @GetMapping("/{venueId}")
-    public ResponseEntity<Map<String, Object>> getVenueById(@PathVariable String venueId) {
-        logger.info("Fetching venue by ID: {}", venueId);
+    public ResponseEntity<Venue> getVenueById(@PathVariable String venueId) {
+        logger.info("Fetching venue with ID: {}", venueId);
         Optional<Venue> venue = venueServices.getVenueById(venueId);
         if (venue.isPresent()) {
-            Map<String, Object> response = new HashMap<>();
-            response.put("venue", venue.get());
-            response.put("actions", Map.of(
-                    "addService", "/venues/" + venueId + "/services",
-                    "editServices", "/venues/" + venueId + "/services"
-            ));
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(venue.get());
         }
+        logger.warn("Venue with ID '{}' not found", venueId);
         return ResponseEntity.notFound().build();
     }
 
-    @GetMapping("/name/{venueName}")
-    public ResponseEntity<Venue> getVenuesByName(@PathVariable String venueName) {
-        logger.info("Fetching venues by name: {}", venueName);
-        Optional<Venue> venuesByName = venueServices.getVenuesByName(venueName);
-        return venuesByName.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
-    }
-
-    @PutMapping("/{venueId}")
-    public ResponseEntity<Venue> updateVenue(
+    @PostMapping("/{venueId}/services")
+    public ResponseEntity<Void> addServicesToVenue(
             @PathVariable String venueId,
-            @Valid @RequestPart("venue") Venue venue,
-            @RequestPart(value = "images", required = false) List<MultipartFile> images) {
-        logger.info("Updating venue with ID: {}", venueId);
-        Optional<Venue> updatedVenue = venueServices.updateVenue(venueId, venue, images);
-        return updatedVenue.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
-    }
-
-    @DeleteMapping("/{venueId}")
-    public ResponseEntity<Map<String, String>> deleteVenue(@PathVariable String venueId) {
-        logger.info("Deleting venue with ID: {}", venueId);
-        boolean deleted = venueServices.deleteVenue(venueId);
-        if (deleted) {
-            return ResponseEntity.ok(Collections.singletonMap("message", "Venue deleted successfully"));
+            @RequestBody List<String> serviceIds) {
+        logger.info("Adding services to venue ID: {}", venueId);
+        boolean added = venueServices.addServicesToVenue(venueId, serviceIds);
+        if (added) {
+            return ResponseEntity.ok().build();
         }
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(Collections.singletonMap("error", "Venue not found"));
+        logger.warn("Failed to add services to venue ID: {}", venueId);
+        return ResponseEntity.badRequest().build();
     }
 
-    @GetMapping("/search/address")
-    public ResponseEntity<List<Venue>> searchVenuesByAddress(@RequestParam String address) {
-        logger.info("Searching venues by address: {}", address);
-        List<Venue> venues = venueServices.searchVenuesByAddress(address);
-        if (venues.isEmpty()) {
-            return ResponseEntity.noContent().build();
+    @DeleteMapping("/{venueId}/services/{serviceId}")
+    public ResponseEntity<Void> removeServiceFromVenue(
+            @PathVariable String venueId,
+            @PathVariable String serviceId) {
+        logger.info("Removing service ID: {} from venue ID: {}", serviceId, venueId);
+        boolean removed = venueServices.removeServiceFromVenue(venueId, serviceId);
+        if (removed) {
+            return ResponseEntity.ok().build();
         }
-        return ResponseEntity.ok(venues);
-    }
-
-    @GetMapping("/user/{userId}")
-    @PreAuthorize("hasRole('USER') and #userId == authentication.principal.name") // Use name from JWT
-    public ResponseEntity<List<Venue>> getVenuesByUserId(@PathVariable String userId) {
-        logger.info("Fetching venues for user name: {}", userId);
-        List<Venue> venues = venueServices.getVenuesByUserId(userId);
-        logger.debug("Found {} venues for user name: {}", venues.size(), userId);
-        return ResponseEntity.ok(venues);
+        logger.warn("Failed to remove service ID: {} from venue ID: {}", serviceId, venueId);
+        return ResponseEntity.notFound().build();
     }
 }

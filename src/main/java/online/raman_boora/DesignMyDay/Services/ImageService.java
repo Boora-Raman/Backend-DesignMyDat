@@ -31,7 +31,7 @@ public class ImageService {
         }
 
         String fileName = UUID.randomUUID().toString() + "_" + image.getOriginalFilename();
-        Path filePath = Paths.get(fileStorageConfig.getUserUploadDir(), fileName);
+        Path filePath = Paths.get(fileStorageConfig.getVenueUploadDir(), fileName);
 
         logger.info("Saving user image: {} to path: {}", fileName, filePath);
         Files.write(filePath, image.getBytes());

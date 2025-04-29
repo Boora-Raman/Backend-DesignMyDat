@@ -64,12 +64,11 @@ public class UserController {
 
     @PostMapping("/login")
     public ResponseEntity<Map<String, String>> login(@RequestBody Users user) {
+        logger.info("Login request for user: {}", user.getEmail());
         String token = userServices.validate(user);
-
         if (token == null) {
             return ResponseEntity.status(401).body(Collections.singletonMap("error", "Invalid credentials"));
         }
-
         Map<String, String> response = new HashMap<>();
         response.put("token", token);
         response.put("message", "Login successful");

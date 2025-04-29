@@ -1,12 +1,14 @@
 package online.raman_boora.DesignMyDay.Models;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-@Getter
-@Setter
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
 @Document(collection = "services")
 public class Service {
 
@@ -14,6 +16,8 @@ public class Service {
     private String serviceId;
 
     private String serviceName;
-    private Double servicePrice;
+
+    private double servicePrice;
+
     private String serviceDescription;
 }

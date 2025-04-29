@@ -1,7 +1,5 @@
 package online.raman_boora.DesignMyDay.Models;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -18,21 +16,37 @@ import java.util.List;
 @NoArgsConstructor
 @Document(collection = "bookings")
 public class Booking {
-
     @Id
     private String bookingId;
 
-    @NotNull(message = "Venue cannot be null")
     @DBRef
-    private Venue venue; // Venue that was booked
+    private Venue venue;
 
-    @NotNull(message = "Services cannot be null")
     @DBRef
-    private List<Service> services = new ArrayList<>(); // Services selected during booking
+    private List<Vendor> vendors = new ArrayList<>();
 
-    @NotNull(message = "Booking date cannot be null")
+    @DBRef
+    private List<Carter> carters = new ArrayList<>();
+
     private Date bookingDate;
 
-    @NotBlank(message = "Status cannot be blank")
-    private String status; // e.g., "Confirmed", "Cancelled", "Pending"
+    private String status;
+
+    private Double totalPrice;
+
+    public List<Vendor> getVendors() {
+        return vendors != null ? vendors : new ArrayList<>();
+    }
+
+    public void setVendors(List<Vendor> vendors) {
+        this.vendors = vendors != null ? vendors : new ArrayList<>();
+    }
+
+    public List<Carter> getCarters() {
+        return carters != null ? carters : new ArrayList<>();
+    }
+
+    public void setCarters(List<Carter> carters) {
+        this.carters = carters != null ? carters : new ArrayList<>();
+    }
 }

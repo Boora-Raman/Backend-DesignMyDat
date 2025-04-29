@@ -1,35 +1,39 @@
 package online.raman_boora.DesignMyDay.Models;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
-
 import java.util.ArrayList;
 import java.util.List;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Document(collection = "venues")
-public class Venue {
-
+@Document(collection = "vendors")
+public class Vendor {
     @Id
-    private String venueId;
+    private String id;
 
-    private String venueName;
+    @NotBlank
+    private String name;
 
-    private String venueAddress;
+    @NotEmpty
+    private List<String> specialties = new ArrayList<>();
 
-    private double venuePrice;
+    private String description;
+
+    @NotNull
+    private Double price;
 
     @DBRef
     private List<Images> images = new ArrayList<>();
 
-    @DBRef
-    private List<Service> services = new ArrayList<>();
 
     public List<Images> getImages() {
         return images != null ? images : new ArrayList<>();
@@ -39,11 +43,6 @@ public class Venue {
         this.images = images != null ? images : new ArrayList<>();
     }
 
-    public List<Service> getServices() {
-        return services != null ? services : new ArrayList<>();
-    }
 
-    public void setServices(List<Service> services) {
-        this.services = services != null ? services : new ArrayList<>();
-    }
+
 }
