@@ -13,6 +13,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.awt.print.Book;
 import java.io.IOException;
 import java.util.*;
 
@@ -47,6 +48,13 @@ public class UserController {
         logger.info("Fetching user by token: {}", token);
         return jwtService.extractUserName(token);
     }
+
+    @GetMapping("/expired/{token}")
+    public Boolean isTokenValid(@PathVariable String token) {
+        logger.info("Checking Token For  expiration : {}", token);
+        return jwtService.isTokenExpired(token);
+    }
+
 
     @GetMapping("/user/{userId}")
     public ResponseEntity<Users> getUserByUserId(@PathVariable String userId) {

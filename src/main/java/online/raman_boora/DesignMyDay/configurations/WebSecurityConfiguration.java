@@ -3,6 +3,7 @@ package online.raman_boora.DesignMyDay.configurations;
 import online.raman_boora.DesignMyDay.Services.JwtService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -39,7 +40,10 @@ public class WebSecurityConfiguration {
                 .csrf(csrf -> csrf.disable())
                 .cors(Customizer.withDefaults())// Disable CSRF for API usage
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/signup", "/login" , "/api/images/**").permitAll() // Public endpoints
+                        .requestMatchers("/signup", "/login" , "/api/images/**").permitAll()// Public endpoints
+                        .requestMatchers(HttpMethod.GET, "/vendors/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/carters/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/venues/**").permitAll()
                         .requestMatchers("/users").authenticated() // Secure /users endpoint explicitly
                         .anyRequest().authenticated() // All other endpoints require authentication
                 )
@@ -72,7 +76,7 @@ public class WebSecurityConfiguration {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**") // Match all endpoints
-                        .allowedOrigins("http://localhost:3000", "http://127.0.0.1:3001") // Specify frontend origins
+                        .allowedOrigins("http://localhost:3000", "http://127.0.0.1:3001","http://127.0.0.1:5500") // Specify frontend origins
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS") // Allow specific HTTP methods
                         .allowedHeaders("*") // Allow all headers
                         .allowCredentials(true);
